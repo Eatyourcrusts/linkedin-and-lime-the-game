@@ -7,8 +7,8 @@
 <style>
   :root{ --panel-h: 38vh; --panel-bg:#5b2aa0; --panel-accent:#8a63d2; --panel-edge:#2b2140; }
   html, body { height: 100%; margin: 0; background:#0f1115; color:#eaeaea; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-  #wrap { display:flex; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding-bottom:0; }
-  canvas { background:#6e6e6e; box-shadow: 0 10px 40px rgba(0,0,0,.5); border-radius:10px; outline:none; width: min(96vw, 900px); height: auto; max-height: calc(100vh - var(--panel-h) - 24px); margin-top: 12px; }
+  #wrap { display:flex; align-items:flex-start; justify-content:center; height:100dvh; box-sizing:border-box; padding-bottom:0; padding-top: env(safe-area-inset-top); }
+  canvas { background:#6e6e6e; box-shadow: 0 10px 40px rgba(0,0,0,.5); border-radius:10px; outline:none; display:block; width: 100vw; max-width: 900px; height: auto; max-height: calc(100dvh - var(--panel-h) - 24px); margin: 8px auto 0; }
   .help { position: fixed; left: 12px; top: 12px; color:#bbb; font-size: 12px; line-height:1.4; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
   .help kbd { background:#111; padding:2px 6px; border-radius:4px; box-shadow: inset 0 0 0 1px #333; }
   .assetBar { position: fixed; right: 12px; top: 12px; background: rgba(0,0,0,.6); padding: 8px 10px; border-radius: 8px; font-size: 12px; color:#ddd; display:flex; gap:8px; align-items:center; user-select:none; }
@@ -89,21 +89,38 @@
 
   // --- Assets ---
   const assets = { handlebar:null, road:null, car:null };
-  function loadImage(src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.src=src; }); }
-  function loadFileToImage(file, key){ const fr = new FileReader(); fr.onload = async ()=>{ assets[key] = await loadImage(fr.result); }; fr.readAsDataURL(file); }
+
+  function loadImage(src){
+    return new Promise((resolve, reject)=>{
+      const i = new Image();
+      i.onload = ()=> resolve(i);
+      i.onerror = (e)=> reject(e);
+      i.src = src;
+    });
+  }
+  function loadFileToImage(file, key){
+    const fr = new FileReader();
+    fr.onload = async ()=>{ try { assets[key] = await loadImage(fr.result); console.log('Uploaded', key); } catch(e){ console.warn('Upload failed', key, e);} };
+    fr.readAsDataURL(file);
+  }
+  // Preload defaults from ./assets (with cache-busting once)
+  async function preload(src, key){
+    try{
+      const img = await loadImage(src + (src.includes('?')?'':'?v=1'));
+      assets[key] = img;
+      console.log('Preloaded', key, img.width+'x'+img.height, 'from', src);
+    }catch(e){ console.warn('Preload failed', key, src, e); }
+  }
+  (async ()=>{
+    await preload('./assets/handlebars.png','handlebar');
+    await preload('./assets/road.png','road');
+    await preload('./assets/car.png','car');
+  })();
+
+  // Hook file inputs
   [['handlebarFile','handlebar'],['roadFile','road'],['carFile','car']].forEach(([id,key])=>{
     const el = document.getElementById(id);
     if(el){ el.addEventListener('change', (e)=>{ const f=e.target.files[0]; if(f) loadFileToImage(f,key); e.target.blur(); focusGame(); }); }
-  });
-
-  // Drag & drop ordering: handlebar, road, car
-  ['dragenter','dragover','dragleave','drop'].forEach(ev=>{ cvs.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); }); });
-  cvs.addEventListener('drop', e=>{
-    const files = [...e.dataTransfer.files];
-    if(files[0]) loadFileToImage(files[0],'handlebar');
-    if(files[1]) loadFileToImage(files[1],'road');
-    if(files[2]) loadFileToImage(files[2],'car');
-    focusGame();
   });
 
   // --- Constants ---
@@ -258,7 +275,13 @@
     ctx.restore();
 
     // HUD
-    ctx.globalAlpha=.75; ctx.fillStyle='#000'; ctx.fillRect(18,18,260,96); ctx.globalAlpha=1; ctx.fillStyle='#9cff57'; ctx.font='20px monospace';
+    // tiny debug: show which assets loaded
+    ctx.globalAlpha = .65; ctx.fillStyle = '#000'; ctx.fillRect(W-180, 8, 172, 56); ctx.globalAlpha = 1; ctx.fillStyle = '#9cff57'; ctx.font = '12px monospace';
+    ctx.fillText(`HB: ${assets.handlebar?'OK':'—'}`, W-170, 24);
+    ctx.fillText(`RD: ${assets.road?'OK':'—'}`, W-170, 40);
+    ctx.fillText(`CR: ${assets.car?'OK':'—'}`, W-110, 24);
+
+    ctx.globalAlpha = .75; ctx.fillStyle = '#000'; ctx.fillRect(18, 18, 260, 96); ctx.globalAlpha = 1;=.75; ctx.fillStyle='#000'; ctx.fillRect(18,18,260,96); ctx.globalAlpha=1; ctx.fillStyle='#9cff57'; ctx.font='20px monospace';
     ctx.fillText(`Potholes hit: ${state.potholesHit}`,30,42);
     ctx.fillText(`Hand temp: ${state.handTemp.toFixed(0)}°C`,30,68);
     ctx.fillText(`Speed: ${state.speed.toFixed(1)}`,30,94);
