@@ -117,7 +117,7 @@
       warnMsgs.push(msg);
       console.warn(msg, e);
     }
-  }catch(e){ console.warn('Preload failed', key, src, e); }
+  
   }
   (async ()=>{
     console.log('Preloading default assets from ./assets ...');
@@ -287,24 +287,27 @@
     if(warnMsgs.length){
       const msg = warnMsgs.join('
 ');
-      const pad = 12; const boxW = Math.min(W-40, 560); const lines = msg.split('
-'); const lineH = 18; const boxH = pad*2 + lineH*lines.length;
-      ctx.globalAlpha = .85; ctx.fillStyle = '#3b0000'; ctx.fillRect((W-boxW)/2, 10, boxW, boxH);
-      ctx.globalAlpha = 1; ctx.strokeStyle = '#ff8a80'; ctx.strokeRect((W-boxW)/2, 10, boxW, boxH);
+      const pad = 12; const boxW = Math.min(W-40, 560);
+      const lines = msg.split('
+');
+      const lineH = 18; const boxH = pad*2 + lineH*lines.length;
+      ctx.globalAlpha = .85; ctx.fillStyle = '#3b0000';
+      ctx.fillRect((W-boxW)/2, 10, boxW, boxH);
+      ctx.globalAlpha = 1; ctx.strokeStyle = '#ff8a80';
+      ctx.strokeRect((W-boxW)/2, 10, boxW, boxH);
       ctx.fillStyle = '#ffb3ae'; ctx.font = '14px monospace';
-      for(let i=0;i<lines.length;i++){ ctx.fillText(lines[i], (W-boxW)/2 + pad, 10 + pad + (i+1)*lineH - 4); }
+      for(let i=0;i<lines.length;i++){ ctx.fillText(lines[i], (W-boxW)/2 + pad, 10 + pad + i*lineH + 12); }
     }
 
     // HUD panel
-    ctx.globalAlpha = .75; ctx.fillStyle = '#000'; ctx.fillRect(18, 18, 260, 96); ctx.globalAlpha = 1; ctx.fillStyle = '#9cff57'; ctx.font = '12px monospace';
-    ctx.fillText(`HB: ${assets.handlebar?'OK':'—'}`, W-170, 24);
-    ctx.fillText(`RD: ${assets.road?'OK':'—'}`, W-170, 40);
-    ctx.fillText(`CR: ${assets.car?'OK':'—'}`, W-110, 24);
-
-    ctx.globalAlpha = .75; ctx.fillStyle = '#000'; ctx.fillRect(18, 18, 260, 96); ctx.globalAlpha = 1;=.75; ctx.fillStyle='#000'; ctx.fillRect(18,18,260,96); ctx.globalAlpha=1; ctx.fillStyle='#9cff57'; ctx.font='20px monospace';
+    ctx.globalAlpha = .75; ctx.fillStyle = '#000'; ctx.fillRect(18, 18, 260, 120); ctx.globalAlpha = 1; ctx.fillStyle = '#9cff57'; ctx.font = '20px monospace';
     ctx.fillText(`Potholes hit: ${state.potholesHit}`,30,42);
     ctx.fillText(`Hand temp: ${state.handTemp.toFixed(0)}°C`,30,68);
     ctx.fillText(`Speed: ${state.speed.toFixed(1)}`,30,94);
+    ctx.font = '12px monospace';
+    ctx.fillText(`HB:${assets.handlebar?'OK':'—'}`,30,116);
+    ctx.fillText(`RD:${assets.road?'OK':'—'}`,112,116);
+    ctx.fillText(`CR:${assets.car?'OK':'—'}`,190,116);
 
     // Speed bars
     const bars=8,bw=18,gap=6,bx=W-30-bw,by=30; for(let i=0;i<bars;i++){ const filled = state.speed > (i/(bars-1))*MAX_SPEED; ctx.fillStyle = filled ? ['#f9d976','#f6bf6b','#f3a65f','#f08d53','#ec7347','#e95a3b','#e6412f','#e22723'][i] : '#444'; ctx.fillRect(bx - i*(bw+gap), by + i*3, bw, 24); }
